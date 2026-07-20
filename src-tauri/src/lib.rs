@@ -54,6 +54,30 @@ impl Default for Settings {
     }
 }
 
+fn get_docker_cmd() -> String {
+    if let Ok(_) = Command::new("docker").arg("--version").output() {
+        return "docker".to_string();
+    }
+    if env::consts::OS == "macos" {
+        let paths = [
+            "/usr/local/bin/docker",
+            "/opt/homebrew/bin/docker",
+            "/Applications/Docker.app/Contents/Resources/bin/docker",
+        ];
+        for p in paths {
+            if PathBuf::from(p).exists() {
+                return p.to_string();
+            }
+        }
+    } else if env::consts::OS == "windows" {
+        let win_path = "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe";
+        if PathBuf::from(win_path).exists() {
+            return win_path.to_string();
+        }
+    }
+    "docker".to_string()
+}
+
 fn get_settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let mut config_dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
@@ -122,8 +146,14 @@ fn validate_settings(settings: &Settings) -> Result<(), String> {
 #[tauri::command]
 async fn docker_build(app: AppHandle) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let mut child = Command::new("docker")
-            .args(["build", "-t", "x11vm-image", "../docker"])
+        let mut docker_dir = app.path().resource_dir().unwrap_or_default().join("docker");
+        if !docker_dir.exists() {
+            docker_dir = std::env::current_dir().unwrap_or_default().join("../docker");
+        }
+        let docker_dir_str = docker_dir.to_string_lossy().to_string();
+
+        let mut child = Command::new(get_docker_cmd())
+            .args(["build", "-t", "x11vm-image", &docker_dir_str])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -204,7 +234,7 @@ async fn docker_run(app: AppHandle) -> Result<String, String> {
 
         args.push("x11vm-image".to_string());
 
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args(&args)
             .output()
             .map_err(|e| e.to_string())?;
@@ -233,7 +263,7 @@ async fn docker_stop() -> Result<String, String> {
                 .output();
         }
 
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args(["rm", "-f", "x11vm-container"])
             .output()
             .map_err(|e| e.to_string())?;
@@ -251,7 +281,7 @@ async fn docker_stop() -> Result<String, String> {
 #[tauri::command]
 async fn docker_image_status() -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args(["images", "-q", "x11vm-image"])
             .output()
             .map_err(|e| e.to_string())?;
@@ -266,7 +296,7 @@ async fn docker_image_status() -> Result<bool, String> {
 #[tauri::command]
 async fn docker_status() -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args(["ps", "-q", "-f", "name=x11vm-container"])
             .output()
             .map_err(|e| e.to_string())?;
@@ -350,7 +380,7 @@ async fn check_xpra_installed() -> Result<bool, String> {
 #[tauri::command]
 async fn open_terminal() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args([
                 "exec",
                 "-d",
@@ -378,7 +408,7 @@ async fn open_xterm(flags: Option<String>) -> Result<String, String> {
         let xterm_flags = flags.unwrap_or_default();
         let cmd = format!("DISPLAY=:100 xterm {}", xterm_flags);
         
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args([
                 "exec",
                 "-d",
@@ -403,7 +433,7 @@ async fn open_xterm(flags: Option<String>) -> Result<String, String> {
 #[tauri::command]
 async fn open_xemacs() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let output = Command::new("docker")
+        let output = Command::new(get_docker_cmd())
             .args([
                 "exec",
                 "-d",
@@ -434,7 +464,7 @@ pub fn run() {
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 // Ensure container is stopped when closing the app (max 1s wait)
-                let _ = Command::new("docker")
+                let _ = Command::new(get_docker_cmd())
                     .args(["stop", "-t", "1", "x11vm-container"])
                     .output();
             }
