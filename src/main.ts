@@ -104,6 +104,12 @@ function logMessage(msg: string, color: string = "") {
 
 async function checkStatus() {
   try {
+    const daemonRunning: boolean = await invoke("docker_daemon_status");
+    if (!daemonRunning) {
+      updateUIDaemonDown();
+      return;
+    }
+
     const isImageBuilt: boolean = await invoke("docker_image_status");
     const isRunning: boolean = await invoke("docker_status");
     isRunningState = isRunning;
@@ -112,6 +118,25 @@ async function checkStatus() {
     logMessage(`${t("ui.status.checking")} failed: ${e}`, C_RED);
     updateUI(false, false);
   }
+}
+
+function updateUIDaemonDown() {
+  if (!indicatorEl || !statusTextEl || !btnBuild || !btnStart || !btnAttach || !btnStop || !btnTerminal || !btnXemacs) return;
+
+  isDisplayAttached = false;
+  isRunningState = false;
+
+  indicatorEl.className = "w-2 h-2 rounded-full bg-gray-400";
+  statusTextEl.textContent = t("ui.status.docker_not_running");
+
+  btnBuild.disabled = true;
+  btnStart.disabled = true;
+  btnAttach.disabled = true;
+  btnXemacs.disabled = true;
+  btnTerminal.disabled = true;
+  if (btnXterm) btnXterm.disabled = true;
+  btnStop.disabled = true;
+  enableXtermPresets(false);
 }
 
 function updateUI(isImageBuilt: boolean, isRunning: boolean) {

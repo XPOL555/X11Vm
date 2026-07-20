@@ -8,6 +8,23 @@ use std::process::Command;
 use std::process::Stdio;
 use tauri::{AppHandle, Emitter, Manager};
 
+/// Names, ports, and paths shared across the Docker/Xpra commands below.
+/// Centralized so the reliability fixes in docker_stop/stop_environment stay
+/// consistent with the values used to start the container in docker_run.
+mod config {
+    pub const CONTAINER_NAME: &str = "x11vm-container";
+    pub const IMAGE_NAME: &str = "x11vm-image";
+    pub const XPRA_DISPLAY: &str = ":100";
+    pub const XPRA_PORT: u16 = 10000;
+    /// Grace period given to `docker stop` before Docker sends SIGKILL.
+    pub const STOP_TIMEOUT_SECS: u32 = 5;
+
+    pub fn xpra_tcp_target() -> String {
+        format!("tcp:127.0.0.1:{}", XPRA_PORT)
+    }
+}
+use config::{xpra_tcp_target, CONTAINER_NAME, IMAGE_NAME, STOP_TIMEOUT_SECS, XPRA_DISPLAY};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Mapping {
     pub host_path: String,
@@ -47,7 +64,7 @@ impl Default for Settings {
                     id: "matrix-xterm".to_string(),
                     name: "Matrix".to_string(),
                     flags: "-bg black -fg green".to_string(),
-                }
+                },
             ],
             xpra_dpi: 0,
         }
@@ -55,7 +72,7 @@ impl Default for Settings {
 }
 
 fn get_docker_cmd() -> String {
-    if let Ok(_) = Command::new("docker").arg("--version").output() {
+    if Command::new("docker").arg("--version").output().is_ok() {
         return "docker".to_string();
     }
     if env::consts::OS == "macos" {
@@ -76,6 +93,60 @@ fn get_docker_cmd() -> String {
         }
     }
     "docker".to_string()
+}
+
+/// Resolves the Xpra client binary, preferring well-known absolute install
+/// paths on Windows/macOS and falling back to PATH resolution everywhere
+/// else (Linux installs Xpra via the system package manager, so PATH is the
+/// correct source of truth there).
+fn resolve_xpra_cmd() -> String {
+    if env::consts::OS == "windows" {
+        let win_path = "C:\\Program Files\\Xpra\\Xpra_cmd.exe";
+        if PathBuf::from(win_path).exists() {
+            return win_path.to_string();
+        }
+    } else if env::consts::OS == "macos" {
+        let mac_path = "/Applications/Xpra.app/Contents/MacOS/Xpra";
+        if PathBuf::from(mac_path).exists() {
+            return mac_path.to_string();
+        }
+    }
+    "xpra".to_string()
+}
+
+/// Returns the (program, args) needed to terminate a locally running Xpra
+/// client attached to our container, or `None` if the OS isn't recognized.
+/// Kept pure/parameterized on `os` so it can be unit tested from any runner.
+fn xpra_client_kill_command(os: &str) -> Option<(&'static str, Vec<String>)> {
+    match os {
+        "windows" => Some((
+            "taskkill",
+            vec![
+                "/F".to_string(),
+                "/IM".to_string(),
+                "xpra_cmd.exe".to_string(),
+                "/T".to_string(),
+            ],
+        )),
+        "macos" | "linux" => Some(("pkill", vec!["-f".to_string(), xpra_tcp_target()])),
+        _ => None,
+    }
+}
+
+/// Shared shutdown path used both by the explicit "Stop" command and by the
+/// window-close handler: kill any locally attached Xpra client first (now
+/// including Linux, previously only Windows/macOS), then stop the container
+/// with a grace period long enough to avoid an immediate SIGKILL. The
+/// container runs with `--rm`, so a plain `stop` is enough for Docker to
+/// remove it once it exits.
+fn stop_environment() {
+    if let Some((program, args)) = xpra_client_kill_command(env::consts::OS) {
+        let _ = Command::new(program).args(&args).output();
+    }
+
+    let _ = Command::new(get_docker_cmd())
+        .args(["stop", "-t", &STOP_TIMEOUT_SECS.to_string(), CONTAINER_NAME])
+        .output();
 }
 
 fn get_settings_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -143,17 +214,55 @@ fn validate_settings(settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
+/// Checks whether the Docker daemon (not just the CLI binary) is reachable.
+/// `Ok(false)` means the CLI ran but the daemon didn't respond (e.g. Docker
+/// Desktop isn't started); `Err` is reserved for the CLI itself failing to
+/// spawn, which is a distinct, much rarer failure mode.
+#[tauri::command]
+async fn docker_daemon_status() -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let output = Command::new(get_docker_cmd())
+            .arg("info")
+            .output()
+            .map_err(|e| e.to_string())?;
+        Ok(output.status.success())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+fn ensure_daemon_running() -> Result<(), String> {
+    let output = Command::new(get_docker_cmd())
+        .arg("info")
+        .output()
+        .map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err("Docker is not running. Please start Docker Desktop / the Docker service and try again.".to_string())
+    }
+}
+
 #[tauri::command]
 async fn docker_build(app: AppHandle) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let mut docker_dir = app.path().resource_dir().unwrap_or_default().join("docker");
+        ensure_daemon_running()?;
+
+        let resource_dir = app.path().resource_dir().unwrap_or_default();
+        let mut docker_dir = resource_dir.join("docker");
         if !docker_dir.exists() {
-            docker_dir = std::env::current_dir().unwrap_or_default().join("../docker");
+            // Tauri bundles resources from parent directories into _up_
+            docker_dir = resource_dir.join("_up_").join("docker");
+        }
+        if !docker_dir.exists() {
+            docker_dir = std::env::current_dir()
+                .unwrap_or_default()
+                .join("../docker");
         }
         let docker_dir_str = docker_dir.to_string_lossy().to_string();
 
         let mut child = Command::new(get_docker_cmd())
-            .args(["build", "-t", "x11vm-image", &docker_dir_str])
+            .args(["build", "-t", IMAGE_NAME, &docker_dir_str])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -200,6 +309,8 @@ async fn docker_build(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 async fn docker_run(app: AppHandle) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        ensure_daemon_running()?;
+
         let settings = load_settings(&app)?;
         validate_settings(&settings)?;
 
@@ -218,10 +329,10 @@ async fn docker_run(app: AppHandle) -> Result<String, String> {
             "run".to_string(),
             "-d".to_string(),
             "--name".to_string(),
-            "x11vm-container".to_string(),
+            CONTAINER_NAME.to_string(),
             "--rm".to_string(),
             "-p".to_string(),
-            "10000:10000".to_string(),
+            format!("{}:{}", config::XPRA_PORT, config::XPRA_PORT),
             "-v".to_string(),
             format!("{}:{}", default_host_path, default_guest_path),
         ];
@@ -232,7 +343,7 @@ async fn docker_run(app: AppHandle) -> Result<String, String> {
             args.push(format!("{}:{}", mapping.host_path, mapping.container_path));
         }
 
-        args.push("x11vm-image".to_string());
+        args.push(IMAGE_NAME.to_string());
 
         let output = Command::new(get_docker_cmd())
             .args(&args)
@@ -252,19 +363,10 @@ async fn docker_run(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 async fn docker_stop() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        // Kill Xpra process first to avoid limbo state
-        if env::consts::OS == "windows" {
-            let _ = Command::new("taskkill")
-                .args(["/F", "/IM", "xpra_cmd.exe", "/T"])
-                .output();
-        } else if env::consts::OS == "macos" {
-            let _ = Command::new("pkill")
-                .args(["-f", "tcp:127.0.0.1:10000"])
-                .output();
-        }
+        stop_environment();
 
         let output = Command::new(get_docker_cmd())
-            .args(["rm", "-f", "x11vm-container"])
+            .args(["rm", "-f", CONTAINER_NAME])
             .output()
             .map_err(|e| e.to_string())?;
 
@@ -282,7 +384,7 @@ async fn docker_stop() -> Result<String, String> {
 async fn docker_image_status() -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(|| {
         let output = Command::new(get_docker_cmd())
-            .args(["images", "-q", "x11vm-image"])
+            .args(["images", "-q", IMAGE_NAME])
             .output()
             .map_err(|e| e.to_string())?;
 
@@ -297,7 +399,7 @@ async fn docker_image_status() -> Result<bool, String> {
 async fn docker_status() -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(|| {
         let output = Command::new(get_docker_cmd())
-            .args(["ps", "-q", "-f", "name=x11vm-container"])
+            .args(["ps", "-q", "-f", &format!("name={}", CONTAINER_NAME)])
             .output()
             .map_err(|e| e.to_string())?;
 
@@ -311,27 +413,14 @@ async fn docker_status() -> Result<bool, String> {
 #[tauri::command]
 async fn xpra_attach(dpi: u32) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let mut xpra_cmd = "xpra";
+        let xpra_cmd = resolve_xpra_cmd();
 
-        if env::consts::OS == "windows" {
-            let win_path = "C:\\Program Files\\Xpra\\Xpra_cmd.exe";
-            if PathBuf::from(win_path).exists() {
-                xpra_cmd = win_path;
-            }
-        } else if env::consts::OS == "macos" {
-            let mac_path = "/Applications/Xpra.app/Contents/MacOS/Xpra";
-            if PathBuf::from(mac_path).exists() {
-                xpra_cmd = mac_path;
-            }
-        }
-
-        let mut args = vec!["attach", "tcp:127.0.0.1:10000"];
-        let dpi_str = format!("--dpi={}", dpi);
+        let mut args = vec!["attach".to_string(), xpra_tcp_target()];
         if dpi > 0 {
-            args.push(&dpi_str);
+            args.push(format!("--dpi={}", dpi));
         }
 
-        let output = Command::new(xpra_cmd)
+        let output = Command::new(&xpra_cmd)
             .args(&args)
             .output()
             .map_err(|e| format!("Failed to run xpra ({}): {}", xpra_cmd, e))?;
@@ -349,24 +438,10 @@ async fn xpra_attach(dpi: u32) -> Result<String, String> {
 #[tauri::command]
 async fn check_xpra_installed() -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(|| {
-        let mut xpra_cmd = "xpra";
-
-        if env::consts::OS == "windows" {
-            let win_path = "C:\\Program Files\\Xpra\\Xpra_cmd.exe";
-            if PathBuf::from(win_path).exists() {
-                xpra_cmd = win_path;
-            }
-        } else if env::consts::OS == "macos" {
-            let mac_path = "/Applications/Xpra.app/Contents/MacOS/Xpra";
-            if PathBuf::from(mac_path).exists() {
-                xpra_cmd = mac_path;
-            }
-        }
+        let xpra_cmd = resolve_xpra_cmd();
 
         // Just check if we can get the version
-        let output = Command::new(xpra_cmd)
-            .args(["--version"])
-            .output();
+        let output = Command::new(&xpra_cmd).args(["--version"]).output();
 
         match output {
             Ok(out) => Ok(out.status.success()),
@@ -380,15 +455,9 @@ async fn check_xpra_installed() -> Result<bool, String> {
 #[tauri::command]
 async fn open_terminal() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(|| {
+        let cmd = format!("DISPLAY={} xfce4-terminal", XPRA_DISPLAY);
         let output = Command::new(get_docker_cmd())
-            .args([
-                "exec",
-                "-d",
-                "x11vm-container",
-                "bash",
-                "-c",
-                "DISPLAY=:100 xfce4-terminal",
-            ])
+            .args(["exec", "-d", CONTAINER_NAME, "bash", "-c", &cmd])
             .output()
             .map_err(|e| e.to_string())?;
 
@@ -406,17 +475,10 @@ async fn open_terminal() -> Result<String, String> {
 async fn open_xterm(flags: Option<String>) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let xterm_flags = flags.unwrap_or_default();
-        let cmd = format!("DISPLAY=:100 xterm {}", xterm_flags);
-        
+        let cmd = format!("DISPLAY={} xterm {}", XPRA_DISPLAY, xterm_flags);
+
         let output = Command::new(get_docker_cmd())
-            .args([
-                "exec",
-                "-d",
-                "x11vm-container",
-                "bash",
-                "-c",
-                &cmd,
-            ])
+            .args(["exec", "-d", CONTAINER_NAME, "bash", "-c", &cmd])
             .output()
             .map_err(|e| e.to_string())?;
 
@@ -433,15 +495,9 @@ async fn open_xterm(flags: Option<String>) -> Result<String, String> {
 #[tauri::command]
 async fn open_xemacs() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(|| {
+        let cmd = format!("DISPLAY={} xemacs", XPRA_DISPLAY);
         let output = Command::new(get_docker_cmd())
-            .args([
-                "exec",
-                "-d",
-                "x11vm-container",
-                "bash",
-                "-c",
-                "DISPLAY=:100 xemacs",
-            ])
+            .args(["exec", "-d", CONTAINER_NAME, "bash", "-c", &cmd])
             .output()
             .map_err(|e| e.to_string())?;
 
@@ -463,10 +519,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                // Ensure container is stopped when closing the app (max 1s wait)
-                let _ = Command::new(get_docker_cmd())
-                    .args(["stop", "-t", "1", "x11vm-container"])
-                    .output();
+                stop_environment();
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -477,6 +530,7 @@ pub fn run() {
             docker_stop,
             docker_status,
             docker_image_status,
+            docker_daemon_status,
             xpra_attach,
             check_xpra_installed,
             open_terminal,
@@ -485,4 +539,129 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn xpra_client_kill_command_windows() {
+        let (program, args) =
+            xpra_client_kill_command("windows").expect("windows should have a kill command");
+        assert_eq!(program, "taskkill");
+        assert_eq!(args, vec!["/F", "/IM", "xpra_cmd.exe", "/T"]);
+    }
+
+    #[test]
+    fn xpra_client_kill_command_macos_and_linux_match() {
+        let (mac_program, mac_args) =
+            xpra_client_kill_command("macos").expect("macos should have a kill command");
+        let (linux_program, linux_args) =
+            xpra_client_kill_command("linux").expect("linux should have a kill command");
+        assert_eq!(mac_program, "pkill");
+        assert_eq!(linux_program, "pkill");
+        assert_eq!(mac_args, linux_args);
+        assert_eq!(mac_args, vec!["-f", &xpra_tcp_target()]);
+    }
+
+    #[test]
+    fn xpra_client_kill_command_unknown_os_is_none() {
+        assert!(xpra_client_kill_command("freebsd").is_none());
+    }
+
+    #[test]
+    fn xpra_tcp_target_uses_configured_port() {
+        assert_eq!(
+            xpra_tcp_target(),
+            format!("tcp:127.0.0.1:{}", config::XPRA_PORT)
+        );
+    }
+
+    #[test]
+    fn validate_settings_accepts_empty_mappings() {
+        let settings = Settings {
+            mappings: vec![],
+            ..Settings::default()
+        };
+        assert!(validate_settings(&settings).is_ok());
+    }
+
+    #[test]
+    fn validate_settings_rejects_missing_host_path() {
+        let settings = Settings {
+            mappings: vec![Mapping {
+                host_path: "/this/path/does/not/exist/x11vm-test".to_string(),
+                container_path: "/mnt/a".to_string(),
+            }],
+            ..Settings::default()
+        };
+        assert!(validate_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn validate_settings_rejects_overlapping_host_paths() {
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let parent = dir.path().to_string_lossy().to_string();
+        let child = dir.path().join("sub");
+        fs::create_dir_all(&child).unwrap();
+        let child = child.to_string_lossy().to_string();
+
+        let settings = Settings {
+            mappings: vec![
+                Mapping {
+                    host_path: parent.clone(),
+                    container_path: "/mnt/a".to_string(),
+                },
+                Mapping {
+                    host_path: child,
+                    container_path: "/mnt/b".to_string(),
+                },
+            ],
+            ..Settings::default()
+        };
+        assert!(validate_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn validate_settings_rejects_duplicate_container_paths() {
+        let dir1 = tempfile::tempdir().expect("failed to create temp dir");
+        let dir2 = tempfile::tempdir().expect("failed to create temp dir");
+
+        let settings = Settings {
+            mappings: vec![
+                Mapping {
+                    host_path: dir1.path().to_string_lossy().to_string(),
+                    container_path: "/mnt/shared".to_string(),
+                },
+                Mapping {
+                    host_path: dir2.path().to_string_lossy().to_string(),
+                    container_path: "/mnt/shared".to_string(),
+                },
+            ],
+            ..Settings::default()
+        };
+        assert!(validate_settings(&settings).is_err());
+    }
+
+    #[test]
+    fn validate_settings_accepts_valid_distinct_mappings() {
+        let dir1 = tempfile::tempdir().expect("failed to create temp dir");
+        let dir2 = tempfile::tempdir().expect("failed to create temp dir");
+
+        let settings = Settings {
+            mappings: vec![
+                Mapping {
+                    host_path: dir1.path().to_string_lossy().to_string(),
+                    container_path: "/mnt/a".to_string(),
+                },
+                Mapping {
+                    host_path: dir2.path().to_string_lossy().to_string(),
+                    container_path: "/mnt/b".to_string(),
+                },
+            ],
+            ..Settings::default()
+        };
+        assert!(validate_settings(&settings).is_ok());
+    }
 }

@@ -4919,7 +4919,7 @@ dependencies = [
 
 [[package]]
 name = "x11vm"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "dirs",
  "serde",
@@ -4929,6 +4929,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
  "tauri-plugin-shell",
+ "tempfile",
 ]
 
 [[package]]

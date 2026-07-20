@@ -8,6 +8,7 @@ const resources = {
       "ui.status.running": "Running",
       "ui.status.stopped": "Stopped",
       "ui.status.not_built": "Not Built",
+      "ui.status.docker_not_running": "Docker Not Running",
       
       "ui.engine.title": "Docker Engine",
       "ui.engine.build": "Build Base Image",
@@ -121,6 +122,7 @@ const resources = {
       "ui.status.running": "In Esecuzione",
       "ui.status.stopped": "Fermato",
       "ui.status.not_built": "Non Compilata",
+      "ui.status.docker_not_running": "Docker Non Attivo",
       
       "ui.engine.title": "Motore Docker",
       "ui.engine.build": "Compila Immagine Base",

@@ -47,6 +47,15 @@ If you'd like to fix a bug or add a new feature yourself, please follow these st
      ```bash
      bun tauri dev   # or npm run tauri dev
      ```
+   - Before committing, run the same checks CI runs on every push/PR:
+     ```bash
+     cd src-tauri
+     cargo fmt --check
+     cargo clippy --all-targets
+     cargo test
+     cd ..
+     bun run build   # typechecks and builds the frontend
+     ```
    - Ensure your code follows the existing style and is clean.
 5. **Commit your changes**: Write clear, descriptive commit messages.
 6. **Push to your fork**:
