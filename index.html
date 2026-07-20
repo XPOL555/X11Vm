@@ -117,6 +117,12 @@
             <button id="tab-btn-display" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors">
               <span data-i18n="ui.settings.tab.display">Display (Xpra)</span>
             </button>
+            <button id="tab-btn-tutorial" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors">
+              <span data-i18n="ui.settings.tutorial.title">Tutorial</span>
+            </button>
+            <button id="tab-btn-updates" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors">
+              <span data-i18n="ui.settings.updates.title">Updates</span>
+            </button>
           </div>
 
           <!-- Main Content Area -->
@@ -131,18 +137,6 @@
                   <option value="it" data-i18n="ui.settings.language.it">Italiano</option>
                 </select>
               </div>
-
-              <div class="w-full h-px bg-[var(--color-border-light)] dark:bg-[var(--color-border-dark)]"></div>
-
-              <div>
-                <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.tutorial.title">Tutorial</h3>
-                <button id="btn-replay-tutorial" class="btn btn-secondary w-full justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                  <span data-i18n="ui.settings.tutorial.btn">Show Welcome Tutorial</span>
-                </button>
-              </div>
-
-              <div class="w-full h-px bg-[var(--color-border-light)] dark:bg-[var(--color-border-dark)]"></div>
 
               <div>
                 <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.mappings.title">Folder Mappings</h3>
@@ -206,6 +200,35 @@
                   <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.xpra.dpi.title">Client DPI</h3>
                   <p class="text-[11px] text-gray-500 mb-2" data-i18n="ui.settings.xpra.dpi.desc">Force Xpra to use a specific DPI (e.g. 96, 120, 144) to fix scaling warnings. Leave at 0 for auto-detection.</p>
                   <input type="number" id="input-xpra-dpi" min="0" max="300" step="1" class="w-24 bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-2 py-1.5 text-sm outline-none focus:border-[var(--color-primary)] placeholder-gray-400" value="0">
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Tutorial -->
+            <div id="tab-tutorial" class="flex-col gap-6 hidden">
+              <div>
+                <h3 class="text-lg font-semibold mb-2" data-i18n="ui.settings.tutorial.title">Tutorial</h3>
+                <button id="btn-replay-tutorial" class="btn btn-secondary justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <span data-i18n="ui.settings.tutorial.btn">Show Welcome Tutorial</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tab: Updates -->
+            <div id="tab-updates" class="flex-col gap-6 hidden">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-semibold" data-i18n="ui.settings.updates.title">Updates</h3>
+                  <span id="text-current-version" class="text-xs text-gray-500 font-mono">v?.?.?</span>
+                </div>
+                <button id="btn-check-updates" class="btn btn-secondary w-full justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span data-i18n="ui.settings.updates.btn">Check for updates</span>
+                </button>
+                <div id="updates-status-box" class="p-3 rounded border hidden flex-col gap-2">
+                  <p id="updates-status-text" class="text-sm font-medium text-center"></p>
+                  <a href="https://github.com/XPOL555/X11Vm/releases" target="_blank" id="updates-link" class="text-xs text-[var(--color-primary)] hover:underline text-center hidden" data-i18n="ui.settings.updates.link">Open Releases Page</a>
                 </div>
               </div>
             </div>

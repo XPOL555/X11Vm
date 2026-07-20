@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies, xpra and xemacs
+# Install dependencies, xpra and applications
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     wget \
@@ -11,6 +11,11 @@ RUN apt-get update && apt-get install -y \
     xemacs21 \
     dbus-x11 \
     sudo \
+    iraf \
+    saods9 \
+    xfonts-base \
+    xfonts-75dpi \
+    xfonts-100dpi \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Xpra repository (official) to get the latest version
@@ -32,7 +37,7 @@ WORKDIR /home/x11vm
 RUN mkdir -p /home/x11vm/.x11vm
 
 # Create a simple init script to ensure dbus and xpra run smoothly
-RUN echo '#!/bin/bash\nxpra start :100 --bind-tcp=0.0.0.0:10000 --start=xemacs --no-daemon --dpi=96' > /home/x11vm/start.sh && \
+RUN echo '#!/bin/bash\nxpra start :100 --bind-tcp=0.0.0.0:10000 --start=xfce4-terminal --no-daemon --dpi=96' > /home/x11vm/start.sh && \
     chmod +x /home/x11vm/start.sh
 
 ENTRYPOINT ["/home/x11vm/start.sh"]

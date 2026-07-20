@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import { getVersion } from "@tauri-apps/api/app";
 import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { initI18n, t, translateDOM } from "./i18n";
@@ -34,8 +35,12 @@ let settingsError: HTMLElement | null;
 
 let tabBtnGeneral: HTMLElement | null;
 let tabBtnDisplay: HTMLElement | null;
+let tabBtnTutorial: HTMLElement | null;
+let tabBtnUpdates: HTMLElement | null;
 let tabGeneral: HTMLElement | null;
 let tabDisplay: HTMLElement | null;
+let tabTutorial: HTMLElement | null;
+let tabUpdates: HTMLElement | null;
 let btnCheckXpra: HTMLButtonElement | null;
 let xpraStatusBox: HTMLElement | null;
 let xpraStatusIcon: HTMLElement | null;
@@ -50,6 +55,12 @@ let fitAddon: FitAddon;
 
 // Onboarding & Xterm UI
 let onboardingModal: HTMLElement | null;
+let textCurrentVersion: HTMLElement | null;
+let btnCheckUpdates: HTMLButtonElement | null;
+let updatesStatusBox: HTMLElement | null;
+let updatesStatusText: HTMLElement | null;
+let updatesLink: HTMLElement | null;
+
 let btnCloseOnboarding: HTMLButtonElement | null;
 
 let xtermPresetsContainer: HTMLElement | null;
@@ -294,6 +305,57 @@ async function onXterm() {
   }
 }
 
+async function onCheckUpdates() {
+  if (!btnCheckUpdates || !updatesStatusBox || !updatesStatusText || !updatesLink) return;
+  
+  btnCheckUpdates.disabled = true;
+  updatesStatusBox.classList.remove("hidden", "border-green-500", "bg-green-50", "dark:bg-green-900/20", "border-blue-500", "bg-blue-50", "dark:bg-blue-900/20", "border-red-500", "bg-red-50", "dark:bg-red-900/20");
+  updatesLink.classList.add("hidden");
+  updatesStatusText.textContent = t("ui.settings.updates.checking") || "Checking for updates...";
+  updatesStatusText.className = "text-sm font-medium text-center text-gray-500";
+  
+  try {
+    const currentVersion = await getVersion();
+    const response = await fetch("https://api.github.com/repos/XPOL555/X11Vm/releases/latest");
+    if (!response.ok) throw new Error("Network response was not ok");
+    const data = await response.json();
+    const latestVersion = data.tag_name.replace(/^v/, '');
+    
+    // Simple version compare (assumes semver e.g. 1.0.0)
+    const isNewer = compareVersions(latestVersion, currentVersion) > 0;
+    
+    if (isNewer) {
+      updatesStatusBox.classList.add("border-green-500", "bg-green-50", "dark:bg-green-900/20");
+      updatesStatusText.textContent = t("ui.settings.updates.available", { version: latestVersion }) || `New version available: v${latestVersion}!`;
+      updatesStatusText.className = "text-sm font-semibold text-center text-green-600 dark:text-green-400";
+      updatesLink.classList.remove("hidden");
+    } else {
+      updatesStatusBox.classList.add("border-blue-500", "bg-blue-50", "dark:bg-blue-900/20");
+      updatesStatusText.textContent = t("ui.settings.updates.uptodate") || "You are up to date!";
+      updatesStatusText.className = "text-sm font-medium text-center text-blue-600 dark:text-blue-400";
+    }
+  } catch (error) {
+    updatesStatusBox.classList.add("border-red-500", "bg-red-50", "dark:bg-red-900/20");
+    updatesStatusText.textContent = t("ui.settings.updates.error") || "Failed to check for updates.";
+    updatesStatusText.className = "text-sm font-medium text-center text-red-600 dark:text-red-400";
+    console.error("Update check failed:", error);
+  } finally {
+    btnCheckUpdates.disabled = false;
+  }
+}
+
+function compareVersions(v1: string, v2: string): number {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
 async function onXtermPreset(flags: string, name: string) {
   logMessage(`${t("log.open_xterm")} (${name})...`, C_BLUE);
   try {
@@ -332,6 +394,12 @@ function openSettings() {
     currentMappings = settings.mappings || [];
     renderMappings();
     
+    if (textCurrentVersion) {
+      getVersion().then(v => {
+        textCurrentVersion!.textContent = `v${v}`;
+      }).catch(console.error);
+    }
+    
     settingsModal!.classList.remove("hidden");
     // Trigger reflow
     void settingsModal!.offsetWidth;
@@ -348,6 +416,12 @@ function closeSettings() {
   if (settingsError) settingsError.classList.add("hidden");
   if (selectLanguage) selectLanguage.value = currentLanguage;
   if (inputXpraDpi) inputXpraDpi.value = currentXpraDpi.toString();
+  if (updatesStatusBox) {
+    updatesStatusBox.classList.add("hidden");
+    updatesStatusBox.classList.remove("border-green-500", "bg-green-50", "dark:bg-green-900/20", "border-blue-500", "bg-blue-50", "dark:bg-blue-900/20", "border-red-500", "bg-red-50", "dark:bg-red-900/20");
+  }
+  if (updatesLink) updatesLink.classList.add("hidden");
+  
   renderMappings();
   settingsModal.classList.add("opacity-0");
   settingsContent.classList.remove("scale-100");
@@ -579,20 +653,28 @@ function onCopyHost() {
   }
 }
 
-function switchTab(tabId: "general" | "display") {
-  if (!tabBtnGeneral || !tabBtnDisplay || !tabGeneral || !tabDisplay) return;
-  
-  if (tabId === "general") {
-    tabBtnGeneral.className = "w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-gray-200 dark:bg-[#333] text-gray-900 dark:text-gray-100 transition-colors";
-    tabBtnDisplay.className = "w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors";
-    tabGeneral.classList.replace("hidden", "flex");
-    tabDisplay.classList.replace("flex", "hidden");
-  } else {
-    tabBtnDisplay.className = "w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-gray-200 dark:bg-[#333] text-gray-900 dark:text-gray-100 transition-colors";
-    tabBtnGeneral.className = "w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors";
-    tabDisplay.classList.replace("hidden", "flex");
-    tabGeneral.classList.replace("flex", "hidden");
-    // Optionally trigger a check immediately on open
+function switchTab(tabId: "general" | "display" | "tutorial" | "updates") {
+  const tabs = [
+    { id: "general", btn: tabBtnGeneral, content: tabGeneral },
+    { id: "display", btn: tabBtnDisplay, content: tabDisplay },
+    { id: "tutorial", btn: tabBtnTutorial, content: tabTutorial },
+    { id: "updates", btn: tabBtnUpdates, content: tabUpdates }
+  ];
+
+  tabs.forEach(tab => {
+    if (!tab.btn || !tab.content) return;
+    if (tab.id === tabId) {
+      tab.btn.className = "w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-gray-200 dark:bg-[#333] text-gray-900 dark:text-gray-100 transition-colors";
+      tab.content.classList.remove("hidden");
+      tab.content.classList.add("flex");
+    } else {
+      tab.btn.className = "w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors";
+      tab.content.classList.remove("flex");
+      tab.content.classList.add("hidden");
+    }
+  });
+
+  if (tabId === "display") {
     doCheckXpra();
   }
 }
@@ -656,6 +738,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   xpraStatusText = document.getElementById("xpra-status-text");
   inputXpraDpi = document.getElementById("input-xpra-dpi") as HTMLInputElement;
 
+  textCurrentVersion = document.getElementById("text-current-version");
+  btnCheckUpdates = document.getElementById("btn-check-updates") as HTMLButtonElement;
+  updatesStatusBox = document.getElementById("updates-status-box");
+  updatesStatusText = document.getElementById("updates-status-text");
+  updatesLink = document.getElementById("updates-link");
+
   mappingsList = document.getElementById("mappings-list");
   btnAddMapping = document.getElementById("btn-add-mapping") as HTMLButtonElement;
   inputHostPath = document.getElementById("input-host-path") as HTMLInputElement;
@@ -690,8 +778,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   tabBtnGeneral = document.getElementById("tab-btn-general");
   tabBtnDisplay = document.getElementById("tab-btn-display");
+  tabBtnTutorial = document.getElementById("tab-btn-tutorial");
+  tabBtnUpdates = document.getElementById("tab-btn-updates");
   tabGeneral = document.getElementById("tab-general");
   tabDisplay = document.getElementById("tab-display");
+  tabTutorial = document.getElementById("tab-tutorial");
+  tabUpdates = document.getElementById("tab-updates");
 
   // 1. Fetch settings and init i18n
   try {
@@ -736,6 +828,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   tabBtnGeneral?.addEventListener("click", () => switchTab("general"));
   tabBtnDisplay?.addEventListener("click", () => switchTab("display"));
+  tabBtnTutorial?.addEventListener("click", () => switchTab("tutorial"));
+  tabBtnUpdates?.addEventListener("click", () => switchTab("updates"));
   btnCheckXpra?.addEventListener("click", doCheckXpra);
   btnAddMapping?.addEventListener("click", onAddMapping);
   btnBrowseHost?.addEventListener("click", onBrowseHost);
@@ -746,6 +840,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   btnCancelXterm?.addEventListener("click", closeXtermModal);
   btnSaveXterm?.addEventListener("click", onSaveXtermPreset);
   xtermHelpers.forEach(btn => btn.addEventListener("click", onHelperClick));
+  
+  btnCheckUpdates?.addEventListener("click", onCheckUpdates);
 
   btnCloseOnboarding?.addEventListener("click", async () => {
     if (!onboardingModal) return;
