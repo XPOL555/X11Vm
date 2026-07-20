@@ -1,116 +1,59 @@
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
+@import "tailwindcss";
+@import "xterm/css/xterm.css";
+
+@theme {
+  --color-primary: #0071e3;
+  --color-primary-hover: #0077ed;
+  --color-success: #34c759;
+  --color-success-hover: #32d74b;
+  --color-danger: #ff3b30;
+  --color-danger-hover: #ff453a;
+  --color-bg-light: #f5f5f7;
+  --color-bg-dark: #121212;
+  --color-card-light: #ffffff;
+  --color-card-dark: #1e1e1e;
+  --color-border-light: #e5e5ea;
+  --color-border-dark: #333333;
 }
 
-.logo.typescript:hover {
-  filter: drop-shadow(0 0 2em #2d79c7);
-}
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
+body {
   margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  min-width: 320px;
+  min-height: 100vh;
+  @apply bg-[var(--color-bg-light)] dark:bg-[var(--color-bg-dark)] text-gray-900 dark:text-gray-100 font-sans antialiased;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
+.btn {
+  @apply px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2;
 }
 
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
+.btn-primary {
+  @apply bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] shadow-sm;
 }
 
-.row {
-  display: flex;
-  justify-content: center;
+.btn-success {
+  @apply bg-[var(--color-success)] text-white hover:bg-[var(--color-success-hover)] shadow-sm;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+.btn-secondary {
+  @apply bg-white dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200 border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] hover:bg-gray-50 dark:hover:bg-[#333333] shadow-sm;
 }
 
-a:hover {
-  color: #535bf2;
+.btn-danger {
+  @apply bg-white dark:bg-[#2a2a2a] text-[var(--color-danger)] border border-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white shadow-sm;
 }
 
-h1 {
-  text-align: center;
+/* Custom scrollbar for xterm if needed */
+.xterm-viewport::-webkit-scrollbar {
+  width: 10px;
 }
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+.xterm-viewport::-webkit-scrollbar-track {
+  background: #1e1e1e;
 }
-
-button {
-  cursor: pointer;
+.xterm-viewport::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 5px;
 }
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
