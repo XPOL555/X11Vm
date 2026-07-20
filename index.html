@@ -2,6 +2,9 @@
 <html lang="en" class="antialiased">
   <head>
     <meta charset="UTF-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>X11Vm</title>
@@ -10,14 +13,19 @@
 
   <body class="h-screen w-full overflow-hidden flex flex-col">
     <!-- Header -->
-    <header class="h-14 border-b border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] bg-[var(--color-card-light)] dark:bg-[var(--color-card-dark)] flex items-center justify-between px-6 shrink-0">
+    <header class="h-14 border-b border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] bg-[var(--color-card-light)] dark:bg-[var(--color-card-dark)] flex items-center justify-between px-6 shrink-0 z-20">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-sm shadow-sm">X</div>
-        <h1 class="text-lg font-semibold tracking-tight">X11Vm Control</h1>
+        <h1 class="text-lg font-semibold tracking-tight" data-i18n="ui.app_title">X11Vm Control</h1>
       </div>
-      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-light)] dark:bg-[#2a2a2a] text-xs font-medium border border-[var(--color-border-light)] dark:border-transparent transition-colors duration-200">
-        <div id="status-indicator" class="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
-        <span id="status-text">Checking Status...</span>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-bg-light)] dark:bg-[#2a2a2a] text-xs font-medium border border-[var(--color-border-light)] dark:border-transparent transition-colors duration-200">
+          <div id="status-indicator" class="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
+          <span id="status-text" data-i18n="ui.status.checking">Checking Status...</span>
+        </div>
+        <button id="btn-settings" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#333333] transition-colors cursor-pointer" title="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
       </div>
     </header>
 
@@ -29,41 +37,53 @@
         
         <!-- Engine Section -->
         <section class="flex flex-col gap-3">
-          <h2 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Docker Engine</h2>
+          <h2 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1" data-i18n="ui.engine.title">Docker Engine</h2>
           <button id="btn-build" class="btn btn-secondary w-full">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            Build Base Image
+            <span data-i18n="ui.engine.build">Build Base Image</span>
           </button>
           <button id="btn-start" class="btn btn-primary w-full" disabled>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            Start Environment
+            <span data-i18n="ui.engine.start">Start Environment</span>
           </button>
           <button id="btn-stop" class="btn btn-danger w-full mt-2" disabled>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-            Stop Environment
+            <span data-i18n="ui.engine.stop">Stop Environment</span>
           </button>
         </section>
 
         <!-- Applications Section -->
         <section class="flex flex-col gap-3">
-          <h2 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Applications</h2>
+          <h2 class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1" data-i18n="ui.apps.title">Applications</h2>
           <button id="btn-attach" class="btn btn-success w-full" disabled>
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"></path><path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"></path><path d="M4 12V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8"></path></svg>
-            Attach Display
+            <span data-i18n="ui.apps.attach">Attach Display</span>
           </button>
           <div class="grid grid-cols-2 gap-2 mt-2">
             <button id="btn-xemacs" class="btn btn-secondary" disabled>
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M2 15h10"></path><path d="m9 18 3-3-3-3"></path></svg>
-              XEmacs
+              <span data-i18n="ui.apps.xemacs">XEmacs</span>
             </button>
             <button id="btn-terminal" class="btn btn-secondary" disabled>
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-              Term
+              <span data-i18n="ui.apps.term">Term</span>
             </button>
             <button id="btn-xterm" class="btn btn-secondary col-span-2" disabled>
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-              Xterm (Legacy)
+              <span data-i18n="ui.apps.xterm_legacy">Xterm (Legacy)</span>
             </button>
+          </div>
+          
+          <div class="mt-4 p-3 bg-[#111] dark:bg-[#111] border border-[#2a2a2a] rounded shadow-inner flex flex-col gap-2">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-xs font-semibold text-gray-300" data-i18n="ui.apps.xterm_presets">Xterm Presets</span>
+              <button id="btn-add-xterm-preset" class="text-gray-400 hover:text-white transition-colors" title="Add Preset">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
+            <div id="xterm-presets-container" class="grid grid-cols-2 gap-2">
+              <!-- Dynamically populated -->
+            </div>
           </div>
         </section>
       </aside>
@@ -71,11 +91,194 @@
       <!-- Right Panel: Terminal -->
       <section class="flex-1 bg-[#1e1e1e] flex flex-col overflow-hidden relative">
         <div class="h-8 bg-[#2d2d2d] flex items-center px-4 shrink-0 shadow-sm z-10">
-          <span class="text-[11px] font-medium text-gray-400">System Log</span>
+          <span class="text-[11px] font-medium text-gray-400" data-i18n="ui.terminal.title">System Log</span>
         </div>
         <div id="terminal-container" class="flex-1 p-2 overflow-hidden bg-[#1e1e1e]"></div>
       </section>
 
     </main>
+
+    <!-- Settings Modal Overlay -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
+      <div class="bg-[var(--color-card-light)] dark:bg-[var(--color-card-dark)] w-[750px] h-[550px] max-h-[85vh] rounded-lg shadow-xl flex flex-col overflow-hidden scale-95 transition-transform duration-200" id="settings-content">
+        <div class="px-6 py-4 border-b border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] flex justify-between items-center shrink-0">
+          <h2 class="text-lg font-semibold" data-i18n="ui.settings.title">Settings</h2>
+          <button id="btn-close-settings" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        
+        <div class="flex flex-1 overflow-hidden">
+          <!-- Sidebar -->
+          <div class="w-48 bg-gray-50 dark:bg-[#1a1a1a] border-r border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] p-4 flex flex-col gap-1 shrink-0">
+            <button id="tab-btn-general" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-gray-200 dark:bg-[#333] text-gray-900 dark:text-gray-100 transition-colors">
+              <span data-i18n="ui.settings.tab.general">General</span>
+            </button>
+            <button id="tab-btn-display" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-colors">
+              <span data-i18n="ui.settings.tab.display">Display (Xpra)</span>
+            </button>
+          </div>
+
+          <!-- Main Content Area -->
+          <div class="flex-1 p-6 overflow-y-auto relative">
+            
+            <!-- Tab: General -->
+            <div id="tab-general" class="flex flex-col gap-6">
+              <div>
+                <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.language">Language</h3>
+                <select id="select-language" class="w-full bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-2 py-1.5 text-sm outline-none focus:border-[var(--color-primary)]">
+                  <option value="en" data-i18n="ui.settings.language.en">English</option>
+                  <option value="it" data-i18n="ui.settings.language.it">Italiano</option>
+                </select>
+              </div>
+
+              <div class="w-full h-px bg-[var(--color-border-light)] dark:bg-[var(--color-border-dark)]"></div>
+
+              <div>
+                <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.tutorial.title">Tutorial</h3>
+                <button id="btn-replay-tutorial" class="btn btn-secondary w-full justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <span data-i18n="ui.settings.tutorial.btn">Show Welcome Tutorial</span>
+                </button>
+              </div>
+
+              <div class="w-full h-px bg-[var(--color-border-light)] dark:bg-[var(--color-border-dark)]"></div>
+
+              <div>
+                <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.mappings.title">Folder Mappings</h3>
+                <div class="p-3 mb-4 rounded border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700/50 flex gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-600 dark:text-amber-500 shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                  <p class="text-xs text-amber-800 dark:text-amber-200"><strong>Warning:</strong> <span data-i18n="ui.settings.mappings.warning">Do not map your entire Home folder or overlapping directories. Doing so can cause Docker to crash or enter infinite loops due to system symlinks.</span></p>
+                </div>
+                
+                <div id="mappings-list" class="flex flex-col gap-2 mb-4">
+                  <!-- Dynamically populated -->
+                </div>
+
+                <div class="flex items-end gap-2 p-3 bg-[var(--color-bg-light)] dark:bg-[var(--color-bg-dark)] rounded border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)]">
+                  <div class="flex-1 relative">
+                    <label class="block text-xs font-medium text-gray-500 mb-1" data-i18n="ui.settings.host_path">Host Path</label>
+                    <div class="flex gap-1">
+                      <input type="text" id="input-host-path" placeholder="C:\Projects" class="w-full bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-2 py-1.5 text-sm outline-none focus:border-[var(--color-primary)]">
+                      <button id="btn-browse-host" class="btn btn-secondary px-2 py-1.5 shrink-0" title="Browse Folder">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex-1 relative">
+                    <label class="block text-xs font-medium text-gray-500 mb-1" data-i18n="ui.settings.container_path">Container Path</label>
+                    <div class="flex gap-1">
+                      <button id="btn-copy-host" class="btn btn-secondary px-2 py-1.5 shrink-0" title="Copy from Host">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+                      </button>
+                      <input type="text" id="input-container-path" placeholder="/home/x11vm/Projects" class="w-full bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-2 py-1.5 text-sm outline-none focus:border-[var(--color-primary)]">
+                    </div>
+                  </div>
+                  <button id="btn-add-mapping" class="btn btn-secondary px-3 py-1.5 shrink-0 h-[34px]"><span data-i18n="ui.settings.btn.add">Add</span></button>
+                </div>
+                <div id="settings-error" class="text-red-500 text-xs mt-3 hidden"></div>
+              </div>
+            </div>
+
+            <!-- Tab: Display (Xpra) -->
+            <div id="tab-display" class="flex-col gap-6 hidden">
+              <div>
+                <h3 class="text-lg font-semibold mb-2" data-i18n="ui.settings.xpra.title">Display Configuration</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed" data-i18n="ui.settings.xpra.desc">X11Vm uses Xpra to seamlessly forward native Linux windows (like XEmacs or Xterm) from the Docker container directly to your host operating system. To enable this feature, you must have Xpra installed on your Mac or PC.</p>
+                <ul class="list-disc pl-5 text-sm text-gray-600 dark:text-gray-300 mb-6 space-y-2">
+                  <li data-i18n="ui.settings.xpra.install_mac">On Mac, you can install it via Homebrew: <code>brew install xpra</code> or download it from <a href='https://xpra.org' target='_blank' class='text-[var(--color-primary)] hover:underline'>xpra.org</a>.</li>
+                  <li data-i18n="ui.settings.xpra.install_win">On Windows, download the installer from <a href='https://xpra.org' target='_blank' class='text-[var(--color-primary)] hover:underline'>xpra.org</a>.</li>
+                </ul>
+
+                <button id="btn-check-xpra" class="btn btn-secondary mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  <span data-i18n="ui.settings.xpra.btn.check">Check Installation</span>
+                </button>
+
+                <div id="xpra-status-box" class="p-4 rounded border hidden items-start gap-3 mb-6">
+                  <svg id="xpra-status-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 mt-0.5"></svg>
+                  <p id="xpra-status-text" class="text-sm font-medium"></p>
+                </div>
+
+                <div class="w-full h-px bg-[var(--color-border-light)] dark:bg-[var(--color-border-dark)] mb-6"></div>
+
+                <div>
+                  <h3 class="text-sm font-semibold mb-2" data-i18n="ui.settings.xpra.dpi.title">Client DPI</h3>
+                  <p class="text-[11px] text-gray-500 mb-2" data-i18n="ui.settings.xpra.dpi.desc">Force Xpra to use a specific DPI (e.g. 96, 120, 144) to fix scaling warnings. Leave at 0 for auto-detection.</p>
+                  <input type="number" id="input-xpra-dpi" min="0" max="300" step="1" class="w-24 bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-2 py-1.5 text-sm outline-none focus:border-[var(--color-primary)] placeholder-gray-400" value="0">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        
+        <div class="px-6 py-4 border-t border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] flex justify-end gap-3 bg-[var(--color-bg-light)] dark:bg-[var(--color-bg-dark)] shrink-0">
+          <button id="btn-cancel-settings" class="btn btn-secondary"><span data-i18n="ui.settings.btn.cancel">Cancel</span></button>
+          <button id="btn-save-settings" class="btn btn-primary"><span data-i18n="ui.settings.btn.save">Save Changes</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding Modal -->
+    <div id="onboarding-modal" class="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm">
+      <div class="bg-[var(--color-card-light)] dark:bg-[var(--color-card-dark)] w-[500px] rounded-xl shadow-2xl flex flex-col overflow-hidden scale-95 transition-transform duration-300">
+        <div class="p-8 text-center flex flex-col items-center">
+          <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </div>
+          <h2 class="text-2xl font-bold mb-4" data-i18n="ui.onboarding.title">Welcome to X11Vm</h2>
+          <p class="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed" data-i18n="ui.onboarding.desc">
+            X11Vm allows you to run a Linux desktop environment on your system via Docker, seamlessly forwarding windows to your native screen using Xpra.
+          </p>
+          <div class="w-full bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-8 text-left">
+            <h3 class="font-semibold text-sm mb-2 text-blue-800 dark:text-blue-300" data-i18n="ui.onboarding.step1.title">1. Build the Image</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" data-i18n="ui.onboarding.step1.desc">Click 'Build Image' to compile the Docker container.</p>
+            <h3 class="font-semibold text-sm mb-2 text-blue-800 dark:text-blue-300" data-i18n="ui.onboarding.step2.title">2. Install Xpra</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2" data-i18n="ui.onboarding.step2.desc">Make sure Xpra is installed on your host system to display the windows.</p>
+            <button id="btn-onboarding-xpra-settings" class="text-xs font-medium text-[var(--color-primary)] hover:underline flex items-center gap-1">
+              <span data-i18n="ui.onboarding.step2.link">Open Display Settings to check</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+          <button id="btn-close-onboarding" class="btn btn-primary w-full py-3 text-sm font-semibold rounded-lg">
+            <span data-i18n="ui.onboarding.btn">Get Started</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Xterm Preset Modal -->
+    <div id="xterm-modal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden opacity-0 transition-opacity duration-200 backdrop-blur-sm">
+      <div class="bg-[var(--color-card-light)] dark:bg-[var(--color-card-dark)] w-[450px] rounded-lg shadow-xl flex flex-col overflow-hidden scale-95 transition-transform duration-200" id="xterm-content">
+        <div class="px-5 py-4 border-b border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] flex justify-between items-center bg-[var(--color-bg-light)] dark:bg-[var(--color-bg-dark)]">
+          <h2 class="text-base font-semibold" data-i18n="ui.xterm.preset.title">Add Xterm Preset</h2>
+          <button id="btn-close-xterm-modal" class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="p-5 flex flex-col gap-4">
+          <input type="hidden" id="input-xterm-id" value="">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide" data-i18n="ui.xterm.preset.name">Preset Name</label>
+            <input type="text" id="input-xterm-name" class="w-full bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)] placeholder-gray-400" placeholder="e.g. Matrix Terminal">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide" data-i18n="ui.xterm.preset.flags">Xterm Flags</label>
+            <input type="text" id="input-xterm-flags" class="w-full bg-white dark:bg-[#2a2a2a] border border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] rounded px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)] placeholder-gray-400 mb-2" placeholder="e.g. -bg black -fg green">
+            <div class="flex flex-wrap gap-2 mt-1">
+              <button class="xterm-flag-helper text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] transition-colors" data-flag="-bg black">Black BG</button>
+              <button class="xterm-flag-helper text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] transition-colors" data-flag="-fg green">Green FG</button>
+              <button class="xterm-flag-helper text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] transition-colors" data-flag="-fa 'Monospace' -fs 14">Large Font</button>
+            </div>
+            <p class="text-[11px] text-gray-500 mt-2" data-i18n="ui.xterm.preset.desc">Color flags (-bg, -fg) will be automatically detected to colorize the button.</p>
+          </div>
+        </div>
+        <div class="px-5 py-4 border-t border-[var(--color-border-light)] dark:border-[var(--color-border-dark)] flex justify-end gap-3 bg-[var(--color-bg-light)] dark:bg-[var(--color-bg-dark)]">
+          <button id="btn-cancel-xterm" class="btn btn-secondary"><span data-i18n="ui.settings.btn.cancel">Cancel</span></button>
+          <button id="btn-save-xterm" class="btn btn-primary"><span data-i18n="ui.settings.btn.save">Save Preset</span></button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

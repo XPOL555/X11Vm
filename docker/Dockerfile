@@ -32,7 +32,7 @@ WORKDIR /home/x11vm
 RUN mkdir -p /home/x11vm/.x11vm
 
 # Create a simple init script to ensure dbus and xpra run smoothly
-RUN echo '#!/bin/bash\nxpra start :100 --bind-tcp=0.0.0.0:10000 --start=xemacs --no-daemon' > /home/x11vm/start.sh && \
+RUN echo '#!/bin/bash\nxpra start :100 --bind-tcp=0.0.0.0:10000 --start=xemacs --no-daemon --dpi=96' > /home/x11vm/start.sh && \
     chmod +x /home/x11vm/start.sh
 
 ENTRYPOINT ["/home/x11vm/start.sh"]

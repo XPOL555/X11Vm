@@ -6,9 +6,11 @@
       "name": "x11vm",
       "dependencies": {
         "@tauri-apps/api": "^2",
+        "@tauri-apps/plugin-dialog": "~2",
         "@tauri-apps/plugin-opener": "^2",
         "@tauri-apps/plugin-shell": "~2",
         "@xterm/addon-fit": "^0.11.0",
+        "i18next": "^26.3.6",
         "xterm": "^5.3.0",
       },
       "devDependencies": {
@@ -191,6 +193,8 @@
 
     "@tauri-apps/cli-win32-x64-msvc": ["@tauri-apps/cli-win32-x64-msvc@2.11.4", "", { "os": "win32", "cpu": "x64" }, "sha512-+vDiqBIU5dMISg/wNvX3sF+ZHfgJGJ5T0AcO+EHNXV9GGAG+P5fzodlDXD3QdKCRgZxMoCm5PPvj3BqLNjBthw=="],
 
+    "@tauri-apps/plugin-dialog": ["@tauri-apps/plugin-dialog@2.7.2", "", { "dependencies": { "@tauri-apps/api": "^2.11.0" } }, "sha512-pX0IGm1I3I6wc+zeKYcq1GSqogK6okCNX5fOdaNU5ab1AjGS6l1E5wFNjEb7meg7ZFSp0JUs+0jQGQNyOvLrsg=="],
+
     "@tauri-apps/plugin-opener": ["@tauri-apps/plugin-opener@2.5.4", "", { "dependencies": { "@tauri-apps/api": "^2.11.0" } }, "sha512-1HnPkb+AmgO29HBazm4uPLKB+r7zzcTBW1d0fyYp1uP+jwtpoiNDGKMMzz58SFp49nOIrxdE3aUJtT57lfO9CQ=="],
 
     "@tauri-apps/plugin-shell": ["@tauri-apps/plugin-shell@2.3.5", "", { "dependencies": { "@tauri-apps/api": "^2.10.1" } }, "sha512-jewtULhiQ7lI7+owCKAjc8tYLJr92U16bPOeAa472LHJdgaibLP83NcfAF2e+wkEcA53FxKQAZ7byDzs2eeizg=="],
@@ -224,6 +228,8 @@
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
+
+    "i18next": ["i18next@26.3.6", "", { "peerDependencies": { "typescript": "^5 || ^6 || ^7" }, "optionalPeers": ["typescript"] }, "sha512-Bu5Z2nAXgfVyM8xvW3jk9EKRIuX37PudsrBViThNFx7CR7aaYTpP01cxNB/E4c4UUzTDiAZRstEhsRfPOL/8xA=="],
 
     "jiti": ["jiti@2.7.0", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ=="],
 
