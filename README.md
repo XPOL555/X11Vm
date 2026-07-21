@@ -10,6 +10,12 @@ The official repository is hosted at [github.com/XPOL555/X11Vm](https://github.c
 
 ---
 
+## Demo
+
+https://github.com/XPOL555/X11Vm/raw/main/docs/example.mp4
+
+---
+
 ## How It Works
 
 X11Vm acts as a control center that orchestrates a containerized X11 server:
